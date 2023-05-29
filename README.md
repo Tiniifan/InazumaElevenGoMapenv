@@ -15,7 +15,8 @@ Example compile
   `python mapenv.py c mr02b02.mapenv mr02b02_mapenv.bin`
 
 ## Arguments
-```usage: mapenv.py [-h] {c,d} input_file output_file
+```
+usage: mapenv.py [-h] {c,d} input_file output_file
 
   Compile and decompile mapenv file
 

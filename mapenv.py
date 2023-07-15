@@ -5,6 +5,14 @@ import struct
 import codecs
 import argparse
 
+def next_multiple(x, multiple):
+    if x % multiple == 0:
+        return x
+    else:
+        quotient = x // multiple
+        prochain_multiple = (quotient + 1) * multiple
+        return prochain_multiple
+
 def assign_value_to_nested_dict(keys, value, dictionary):
     temp = dictionary
     
@@ -147,7 +155,6 @@ def compile_mapenv(file_path):
                 
             values = line[6:][:-1]
             values = re.sub(r",\s+", ",", values).replace('"', '').split(',')  # Extract PTVAL values
-            print(values)
             
             if len(values) == 1:
                 value = convert_to_type(values[0])  # Convert value to appropriate type
@@ -199,6 +206,7 @@ def decompile_mapenv(file_path):
     entries_count = struct.unpack("<I", file.read(4))[0]
     text_offset = struct.unpack("<I", file.read(4))[0]
     text_length = struct.unpack("<I", file.read(4))[0]
+    text_length = next_multiple(text_length, 16)
     text_line_number = struct.unpack("<I", file.read(4))[0]
 
     file.seek(text_offset + text_length)
@@ -263,6 +271,27 @@ def decompile_mapenv(file_path):
                 text_output += ' ' * (indent_level * 4) + 'PTVAL ' + str(value) + ', "' + text + '";\n'
             else:
                 text_output += ' ' * (indent_level * 4) + 'PTVAL ' + str(value) + ';\n'
+        elif current_tag == b'\x91wOA':
+            # PTVALS
+            values = []
+
+            for x in range(tag_size):
+                if type_size == 0:
+                    values.append(struct.unpack("<I", file.read(4))[0])
+                elif type_size == 1:
+                    values.append(struct.unpack("<I", file.read(4))[0])
+                elif type_size == 2:
+                    values.append(struct.unpack("f", file.read(4))[0])
+                elif type_size == 41:
+                    values.append(struct.unpack("f", file.read(4))[0])
+                elif type_size == 42:
+                    values.append(struct.unpack("f", file.read(4))[0])     
+                elif type_size == 21:
+                    values.append(struct.unpack("f", file.read(4))[0])  
+                elif type_size == 85:
+                    values.append(struct.unpack("f", file.read(4))[0])                    
+            
+            text_output += ' ' * (indent_level * 4) + 'PTVALS ' + ', '.join(str(valeur) for valeur in values) + ';\n'                
         elif current_tag == b'>\xb8\xe6\xd4':
             # _PTREE
             indent_level -= 1  # Decrement the indentation level
@@ -285,7 +314,9 @@ def decompile_mapenv(file_path):
 
     return text_output
 
-if __name__ == '__main__':    
+if __name__ == '__main__':
+    print("Mapenv Compiler Decompiler - 1.1")
+    
     parser = argparse.ArgumentParser(description="Compile and decompile mapenv file")
     parser.add_argument('action', choices=['c', 'd'], help='Action to perform: -c to compile, -d to decompile')
     parser.add_argument('input_file', help='Path to the input file')
